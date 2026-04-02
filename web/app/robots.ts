@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://tidyfiles.vercel.app/sitemap.xml",
+    sitemap: "https://tidyfiles-sigma.vercel.app/sitemap.xml",
   };
 }

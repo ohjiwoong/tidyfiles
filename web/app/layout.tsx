@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://tidyfiles.vercel.app";
+const SITE_URL = "https://tidyfiles-sigma.vercel.app";
 
 export const metadata: Metadata = {
   title: {

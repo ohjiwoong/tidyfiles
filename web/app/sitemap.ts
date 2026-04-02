@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE_URL = "https://tidyfiles.vercel.app";
+const BASE_URL = "https://tidyfiles-sigma.vercel.app";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
