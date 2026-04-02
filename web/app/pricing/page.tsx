@@ -99,14 +99,34 @@ export default function PricingPage() {
     if (!licenseInput.trim()) return;
     setLicenseStatus("checking");
 
-    const valid = await validateLicenseKey(licenseInput.trim());
+    const input = licenseInput.trim();
+
+    // 1. 이미 발급된 토큰인지 서버 검증
+    const valid = await validateLicenseKey(input);
     if (valid) {
-      saveLicenseKey(licenseInput.trim());
+      saveLicenseKey(input);
       setIsPro(true);
       setLicenseStatus("success");
-    } else {
-      setLicenseStatus("fail");
+      return;
     }
+
+    // 2. 활성화 코드인지 확인 (테스트 코드 또는 프로모션 코드)
+    try {
+      const res = await fetch("/api/license/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: input }),
+      });
+      const data = await res.json();
+      if (data.success && data.licenseToken) {
+        saveLicenseKey(data.licenseToken);
+        setIsPro(true);
+        setLicenseStatus("success");
+        return;
+      }
+    } catch {}
+
+    setLicenseStatus("fail");
   };
 
   const handleDeactivate = () => {
