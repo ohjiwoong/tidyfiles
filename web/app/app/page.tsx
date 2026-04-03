@@ -49,7 +49,6 @@ export default function Home() {
   const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [files, setFiles] = useState<ScannedFile[]>([]);
   const [plan, setPlan] = useState<PlanItem[]>([]);
-  const [skippedFiles, setSkippedFiles] = useState<ScannedFile[]>([]);
   const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
   const [useDateFolders, setUseDateFolders] = useState(false);
   const [includeSubfolders, setIncludeSubfolders] = useState(false);
@@ -98,9 +97,7 @@ export default function Home() {
       const scanned = await scanFolder(handle, includeSubfolders);
       setFiles(scanned);
 
-      const result = generatePlan(scanned, useDateFolders);
-      setPlan(result.plan);
-      setSkippedFiles(result.skippedFiles);
+      setPlan(generatePlan(scanned, useDateFolders));
       setState("scanned");
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return;
@@ -112,9 +109,7 @@ export default function Home() {
     setUseDateFolders((prev) => {
       const next = !prev;
       if (files.length > 0) {
-        const r = generatePlan(files, next);
-        setPlan(r.plan);
-        setSkippedFiles(r.skippedFiles);
+        setPlan(generatePlan(files, next));
       }
       return next;
     });
@@ -494,26 +489,6 @@ export default function Home() {
               </div>
             )}
 
-            {/* 건너뛴 파일 안내 */}
-            {skippedFiles.length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                <p className="text-sm font-medium text-yellow-800">
-                  {locale === "ko"
-                    ? `${skippedFiles.length}개 파일은 브라우저 보안 정책으로 자동 정리가 불가능합니다.`
-                    : `${skippedFiles.length} files cannot be auto-organized due to browser security policy.`}
-                </p>
-                <details className="mt-2">
-                  <summary className="text-xs text-yellow-600 cursor-pointer">
-                    {locale === "ko" ? "파일 목록 보기" : "Show files"}
-                  </summary>
-                  <div className="mt-2 max-h-32 overflow-y-auto space-y-1">
-                    {skippedFiles.map((f, i) => (
-                      <div key={i} className="text-xs text-yellow-700">{f.name}</div>
-                    ))}
-                  </div>
-                </details>
-              </div>
-            )}
           </>
         )}
 

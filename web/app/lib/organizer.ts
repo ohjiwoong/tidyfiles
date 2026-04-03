@@ -236,24 +236,13 @@ async function scanFolderRecursive(
 
 // ========== 정리 계획 생성 ==========
 
-export interface PlanResult {
-  plan: PlanItem[];
-  skippedFiles: ScannedFile[]; // 브라우저 보안 팝업 대상 파일
-}
-
 export function generatePlan(
   files: ScannedFile[],
   useDateFolders: boolean = false
-): PlanResult {
+): PlanItem[] {
   const plan: PlanItem[] = [];
-  const skippedFiles: ScannedFile[] = [];
 
   for (const f of files) {
-    // 브라우저 보안 팝업 대상 확장자 → 건너뛰기
-    if (isBrowserBlocked(f.name)) {
-      skippedFiles.push(f);
-      continue;
-    }
     let category = f.category;
 
     // 서브카테고리 적용
@@ -277,7 +266,7 @@ export function generatePlan(
     plan.push({ file: f, targetFolder, reason });
   }
 
-  return { plan, skippedFiles };
+  return plan;
 }
 
 // ========== 정리 실행 ==========
