@@ -236,13 +236,24 @@ async function scanFolderRecursive(
 
 // ========== 정리 계획 생성 ==========
 
+export interface PlanResult {
+  plan: PlanItem[];
+  skippedFiles: ScannedFile[]; // 브라우저 보안 팝업 대상 파일
+}
+
 export function generatePlan(
   files: ScannedFile[],
   useDateFolders: boolean = false
-): PlanItem[] {
+): PlanResult {
   const plan: PlanItem[] = [];
+  const skippedFiles: ScannedFile[] = [];
 
   for (const f of files) {
+    // 브라우저 보안 팝업 대상 확장자 → 건너뛰기
+    if (isBrowserBlocked(f.name)) {
+      skippedFiles.push(f);
+      continue;
+    }
     let category = f.category;
 
     // 서브카테고리 적용
@@ -266,7 +277,7 @@ export function generatePlan(
     plan.push({ file: f, targetFolder, reason });
   }
 
-  return plan;
+  return { plan, skippedFiles };
 }
 
 // ========== 정리 실행 ==========
@@ -282,12 +293,33 @@ async function getOrCreateSubfolder(
   return current;
 }
 
-// 단일 파일 이동 — move() API만 사용 (팝업 없음)
+// move() API 지원 여부 확인
+function supportsMoveAPI(handle: FileSystemFileHandle): boolean {
+  return typeof handle.move === "function";
+}
+
+// 단일 파일 이동 (move 우선, 폴백으로 복사+삭제)
 async function moveFile(
   item: PlanItem,
   targetDir: FileSystemDirectoryHandle
 ): Promise<void> {
-  await item.file.handle.move(targetDir, item.file.name);
+  // move() 우선 시도 — 팝업 없이 즉시 이동
+  if (supportsMoveAPI(item.file.handle)) {
+    try {
+      await item.file.handle.move(targetDir, item.file.name);
+      return;
+    } catch {
+      // move 실패 시 fallback
+    }
+  }
+
+  // fallback: 복사+삭제 (일부 확장자에서 브라우저 보안 팝업이 뜰 수 있음)
+  const originalFile = await item.file.handle.getFile();
+  const newFileHandle = await targetDir.getFileHandle(item.file.name, { create: true });
+  const writable = await newFileHandle.createWritable();
+  await writable.write(await originalFile.arrayBuffer());
+  await writable.close();
+  await item.file.parentHandle.removeEntry(item.file.name);
 }
 
 const CONCURRENCY = 5;
@@ -367,8 +399,17 @@ export async function undoPlan(
         ? await getOrCreateSubfolder(dirHandle, record.sourcePath)
         : dirHandle;
 
-      // move() API만 사용 (팝업 없음)
-      await fileHandle.move(originalDir, record.fileName);
+      // move() 우선, 폴백으로 복사+삭제
+      if (supportsMoveAPI(fileHandle)) {
+        await fileHandle.move(originalDir, record.fileName);
+      } else {
+        const file = await fileHandle.getFile();
+        const restoredHandle = await originalDir.getFileHandle(record.fileName, { create: true });
+        const writable = await restoredHandle.createWritable();
+        await writable.write(await file.arrayBuffer());
+        await writable.close();
+        await subDir.removeEntry(record.fileName);
+      }
 
       success++;
     } catch (e) {
