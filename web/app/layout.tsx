@@ -78,6 +78,10 @@ export default function RootLayout({
     >
       <head>
         <link rel="canonical" href={SITE_URL} />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#2563eb" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icon.svg" />
       </head>
       <body className="min-h-full flex flex-col">
         {children}

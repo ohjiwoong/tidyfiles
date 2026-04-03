@@ -76,6 +76,11 @@ export default function Home() {
     if (history && history.records.length > 0) {
       setUndoHistory(history);
     }
+
+    // PWA 서비스 워커 등록
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
   }, []);
 
   const handleLocaleChange = useCallback((newLocale: Locale) => {
